@@ -1,0 +1,81 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "recal-pruning"
+version = "0.1.0"
+description = "Recoverability-aware calibration for structured LLM pruning"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "MIT"
+license-files = ["LICENSE", "LICENSES/*"]
+dependencies = [
+  "accelerate",
+  "absl-py",
+  "codetiming",
+  "datasets>=3.0,<6",
+  "dill",
+  "emoji",
+  "fastapi",
+  "hydra-core",
+  "huggingface-hub>=0.30,<1",
+  "immutabledict",
+  "langdetect",
+  "latex2sympy2_extended",
+  "liger-kernel",
+  "math_verify",
+  "nltk",
+  "numpy>=1.26,<2",
+  "omegaconf>=2.3",
+  "packaging>=24",
+  "pandas>=2.2,<3.1",
+  "peft",
+  "pyarrow>=16",
+  "pybind11",
+  "pylatexenc",
+  "PyYAML>=6",
+  "requests>=2.31",
+  "ray>=2.47,<2.58",
+  "safetensors>=0.4",
+  "syllapy",
+  "tensorboard",
+  "torch>=2.7,<2.8",
+  "torchdata",
+  "tensordict==0.10.0",
+  "tqdm>=4.66",
+  "transformers>=4.54,<5",
+  "unicodedata2",
+  "uvicorn",
+  "vllm==0.10.0",
+  "wandb>=0.19",
+]
+
+[project.scripts]
+recal-eval = "recal.evaluation.comprehensive_suite:main"
+recal-pipeline = "recal.orchestration.pipeline:main"
+recal-preflight = "recal.orchestration.preflight:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+verl = [
+  "py.typed",
+  "version/version",
+  "trainer/config/*.yaml",
+  "trainer/config/**/*.yaml",
+  "trainer/runtime_env.yaml",
+]
+lcb_runner = ["prompts/few_shot_examples/**/*.json"]
+
+[tool.ruff]
+line-length = 120
+exclude = [
+  "src/verl",
+  "src/lcb_runner",
+  "src/recal/evaluation/ifbench",
+]

@@ -1,0 +1,146 @@
+# qwen3_4b: llm_pruner_recal at 25% whole-model parameter reduction.
+# Paths are relative to the release repository root.
+# Run the matching base configuration first to create pruning.recal.probe_path.
+seed: 20260729
+model:
+  thinking_enabled: false
+  dtype: bfloat16
+  output_dtype: bfloat16
+  path: models/Qwen3-4B-Instruct-2507
+  teacher_path: models/Qwen3-4B-Instruct-2507
+  student_path: models/Qwen3-4B-Instruct-2507
+  revision: cdbee75f17c01a7cc42f958dc650907174af0554
+  tokenizer_revision: cdbee75f17c01a7cc42f958dc650907174af0554
+data:
+  sft_num_prompts: 12000
+  shuffle: false
+  sft_prompt_path: data/recovery_pools/sft_prompts_12k.parquet
+  opd_path: data/recovery_pools/opd_prompts_24k.parquet
+  sft_teacher_raw_path: data/recovery_pools/qwen3_4b/sft_teacher_raw.parquet
+  sft_teacher_path: data/recovery_pools/qwen3_4b/sft_teacher_12k.parquet
+  opd_num_prompts: 24000
+pruning:
+  calibration_rows: 1024
+  hardware_multiple: 128
+  importance:
+    attn_implementation: eager
+    generation:
+      sequence_length: 32768
+      batch_size_per_gpu: 1
+    scoring:
+      primary_score: llm_pruner_taylor
+      accumulator_dtype: float32
+    gradient:
+      sequence_length: 2048
+      batch_size_per_gpu: 1
+  method: llm_pruner_recal
+  importance_dir: artifacts/qwen3_4b/llm_pruner_recal_statistics
+  mask_dir: artifacts/qwen3_4b/llm_pruner_recal_masks
+  calibration_path: data/recovery_pools/pruning_calibration.parquet
+  ratios:
+  - 0.25
+  recal:
+    statistics_dir: artifacts/qwen3_4b/llm_pruner_recal_statistics
+    probe_path: outputs/qwen3_4b/llm_pruner_r25/stages/stage_01_r25/pruned_initial
+    top_k: 16
+    trajectories_per_domain: 256
+    max_calibration_length: 8192
+    batch_size_per_gpu: 1
+    attn_implementation: sdpa
+    logit_chunk: 512
+    weighting: forward_kl
+offline_teacher:
+  temperature: 0.6
+  top_p: 0.95
+  max_response_length: 20480
+  tensor_parallel_size: 8
+  gpu_memory_utilization: 0.84
+  batch_prompts: 256
+  max_model_len: 21504
+  max_num_seqs: 128
+  repetition_threshold: 0.35
+  repetition_ngram: 32
+sft:
+  project_name: recal-sft-qwen3_4b-llm_pruner_recal
+  train_batch_size: 32
+  micro_batch_size_per_gpu: 1
+  n_gpus_per_node: 8
+  total_epochs: 2
+  learning_rate: 1.0e-05
+  weight_decay: 0.0
+  gradient_clip: 1.0
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  enable_gradient_checkpointing: true
+  enable_liger_kernel: true
+  use_remove_padding: true
+  fsdp_strategy: fsdp
+  ulysses_sequence_parallel_size: 1
+  param_offload: false
+  optimizer_offload: false
+  model_dtype: fp32
+  save_freq: 100
+  max_ckpt_to_keep: 1
+  max_length: 21504
+  max_token_len_per_gpu: 21504
+opd:
+  project_name: recal-opd-qwen3_4b-llm_pruner_recal
+  save_freq: 25
+  max_actor_ckpt_to_keep: 1
+  convergence:
+    enabled: true
+    metric: val-topk/overlap_ratio
+    min_steps: 150
+    window: 20
+    patience: 5
+    min_delta: 0.002
+    ema_beta: 0.9
+  actor_model_dtype: fp32
+  train_batch_size: 64
+  ppo_mini_batch_size: 64
+  ppo_micro_batch_size_per_gpu: 1
+  max_prompt_length: 2048
+  learning_rate: 1.0e-06
+  weight_decay: 0.0
+  gradient_clip: 1.0
+  n_gpus_per_node: 8
+  ulysses_sequence_parallel_size: 1
+  rollout_n: 4
+  rollout_temperature: 1.0
+  rollout_top_p: 1.0
+  repetition_penalty: 1.05
+  rollout_tp: 1
+  rollout_gpu_memory_utilization: 0.8
+  rollout_max_num_seqs: 16
+  teacher_micro_batch_size_per_gpu: 8
+  teacher_temperature: 1.0
+  topk: 16
+  top_k_strategy: only_stu
+  reward_weight_mode: student_p
+  max_training_steps: 200
+  max_response_length: 20480
+  max_token_len_per_gpu: 22528
+  rollout_max_num_batched_tokens: 22528
+  teacher_max_token_len_per_gpu: 22528
+boundary_benchmark:
+  profile: full
+  tasks:
+  - aime
+  - gpqa_diamond
+  - ifbench
+  - livecodebench
+  tensor_parallel_size: 8
+  aime_temperature: 0.6
+  aime_top_p: 0.95
+  gpu_memory_utilization: 0.84
+  aime_n: 8
+  max_tokens: 20480
+  max_model_len: 21504
+wandb:
+  mode: disabled
+experiment:
+  name: llm_pruner_recal-qwen3_4b-r25
+  output_dir: outputs/qwen3_4b/llm_pruner_recal_r25
+  boundary_project: recal-boundary-qwen3_4b
+pipeline:
+  stop_after: after_opd

@@ -1,0 +1,16 @@
+/.cache/
+**/.nltk_data/
+/.ruff_cache/
+/.venv/
+/artifacts/
+/build/
+/configs/generated/
+/data/
+/dist/
+/models/
+/outputs/
+/wandb/
+__pycache__/
+*.egg-info/
+*.py[cod]
+*.log
