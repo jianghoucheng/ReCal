@@ -5,53 +5,6 @@ of language models. It can be applied to Minitron, Wanda, FLAP, and
 LLM-Pruner without changing the target architecture or the downstream recovery
 recipe.
 
-This repository contains the complete runnable implementation:
-
-- ReCal and all four pruning baselines;
-- SFT and OPD training;
-- IFBench and LiveCodeBench evaluation;
-- data preparation and contamination filtering;
-- pruning, SFT, OPD, checkpoint export, and evaluation;
-- Qwen3-4B-Instruct-2507 and Qwen3-8B experiment configurations;
-- 15%, 25%, and 35% pruning-ratio reproduction scripts.
-
-## Method
-
-Given a dense teacher \(p_T\) and a provisional model \(p_P\) pruned by the
-selected baseline criterion, ReCal measures pruning damage along dense-teacher
-trajectories:
-
-\[
-d_t =
-D_{\mathrm{KL}}\left(
-p_T(\cdot\mid x_{\leq t})
-\parallel
-p_P(\cdot\mid x_{\leq t})
-\right).
-\]
-
-The implementation computes the divergence on the teacher's top-\(k\)
-probabilities plus an `OTHER` bucket. The token signal is shifted to the
-activation that produced the affected next-token prediction and normalized
-inside each trajectory:
-
-\[
-w_t = \frac{d_t}{\sum_{j\in\mathcal R}d_j},
-\]
-
-where \(\mathcal R\) denotes assistant-response positions. ReCal then replaces
-uniform token aggregation in the original pruning criterion:
-
-\[
-I_j^{\mathrm{ReCal}}
-=
-\operatorname{Aggregate}_t
-\left(w_t\,s_j(x_{\leq t})\right).
-\]
-
-The underlying statistic \(s_j\) remains Minitron activation importance,
-Wanda-SP, FLAP-WIFN, or LLM-Pruner Taylor importance.
-
 ## Source layout
 
 ```text
